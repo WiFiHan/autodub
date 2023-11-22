@@ -5,8 +5,8 @@ import json
 from pydub import AudioSegment
 
 #input_video_path: When using relative path, be sure you know your current directory
-# script_directory = os.path.dirname(os.path.abspath(__file__)) #script_directory: ./STT
-# input_video_path = os.path.join(script_directory, 'data', 'media.mp4')
+#after processing, the sliced audio will be saved in ./STT/output/input_video_name_with_time/audio
+#after processing, the sliced video will be saved in ./STT/output/input_video_name_with_time/video
 input_video_path = './STT/data/media.mp4'
 
 #You may have to change this path to your own path
@@ -16,9 +16,6 @@ to_lang = 'en'
 #You will translate 'from_lang' text to 'to_lang' text
 #'ko', 'en', 'zh-CN', 'ja' are available
 
-save_path = os.path.join(os.getcwd(), 'STT/data/media.mp4')
-#make default save path
-#you can change this path to your own path
 
 is_video_slice_audio = False
 #If you want to slice video with original audio, set this True
@@ -40,7 +37,6 @@ if __name__ == '__main__':
     #PAPAGO Translate: json file with text and timestamp -> json file with translated text and timestamp
     #Before translating, timestamp should be filled
     #After the function below, we gain sequence of (start, end, translated_text, audio)
-    trans_audio_pairs = extract_trans_audio(input_video_path, from_lang, to_lang, result_dict)
-
-    print(trans_audio_pairs)
+    trans_audio_pairs = extract_trans_audio(input_video_path, from_lang, to_lang, result_dict, is_video_slice_audio)
+    print(f'final output of STT pipeline: {trans_audio_pairs}')
 
