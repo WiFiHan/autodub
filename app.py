@@ -20,7 +20,10 @@ with demo:
     with gr.Row():
         with gr.Column():
             input_video = gr.Video(label="Upload")
-            STT_dropdown = gr.Dropdown(["CLOVA"])
+            STT_dropdown = gr.Dropdown(label="STT method", choices=["CLOVA"])
+            with gr.Row():
+                source_lang_dropdown = gr.Dropdown(label="Source Language", choices=["English", "Korean", "Japanese", "Chinese"])
+                target_lang_dropdown = gr.Dropdown(label="Target Language", choices=["English", "Korean", "Japanese", "Chinese"])
             run_button = gr.Button(label="Run")
         with gr.Column():
             output_video = gr.Video(label="Result", interactive=False)

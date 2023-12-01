@@ -5,3 +5,9 @@ test.ipynb
 *.pt
 *.pth
 *.safetensors
+*.npz
+*.zip
+
+results/
+test.mp4
+
