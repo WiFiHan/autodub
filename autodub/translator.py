@@ -1,7 +1,7 @@
 import json
 import requests
 import pandas as pd
-from utils import env
+from .utils import env
 
 class Translator:
     def translate_script(script:pd.DataFrame, source_language:str, target_language:str, save_dir=None) -> pd.DataFrame:

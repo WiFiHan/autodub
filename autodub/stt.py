@@ -3,7 +3,7 @@
 import requests
 import json
 import pandas as pd
-from utils import env
+from .utils import env
 
 
 class STT:

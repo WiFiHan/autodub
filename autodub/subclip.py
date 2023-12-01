@@ -4,7 +4,7 @@ import cv2
 import pandas as pd
 from pydub import AudioSegment
 from moviepy.editor import VideoFileClip
-from utils import video_length
+from .utils import video_length
 
 
 def split_video_to_clips(input_video_path:str, script:pd.DataFrame, save_dir:str|None =None):
