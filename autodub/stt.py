@@ -26,7 +26,7 @@ class ClovaSTT(STT):
         '''
         You must get below two parameters by your own CLOVA account
         Follow 'https://guide.ncloud-docs.com/docs/clovaspeech-spec'
-        And put them into autodub/env.yaml
+        And put them into './env.yaml'
         
         CLOVA API Reference:
             https://api.ncloud-docs.com/docs/ai-application-service-clovaspeech-longsentence

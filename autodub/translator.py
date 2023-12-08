@@ -31,7 +31,7 @@ class PapagoTranslator(Translator):
         '''
         You must prepare "ID" & "SECERET" from your own PAPAGO account
         Follow 'https://developers.naver.com/docs/papago/papago-nmt-overview.md'
-        And put them into 'autodub/env.yaml'
+        And put them into './env.yaml'
         
         PAPAGO API Reference:
             'https://developers.naver.com/docs/papago/papago-nmt-api-reference.md'
