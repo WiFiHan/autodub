@@ -15,7 +15,7 @@ class STT:
             langauge ('str') : Language in video. One of ['KO', 'EN', 'JA', 'CN'].
         
         Returns
-            'pd.DataFrame': Information of each lines. Sequence of (start, end, text, langauge)
+            'pd.DataFrame': Information of each lines. Sequence of (start, end, source(text), translation1, translation2, ...)
 
         """
         raise NotImplementedError()
