@@ -36,7 +36,7 @@ url = 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt
 
 checkpoints_dir = "./checkpoints/"
 
-model_checkpoint_name = "vallex-checkpoint.pt"
+default_checkpoint = "vallex-checkpoint.pt"
 
 model = None
 
@@ -47,10 +47,23 @@ vocos = None
 text_tokenizer = PhonemeBpeTokenizer(tokenizer_path="./assets/bpe_69.json")
 text_collater = get_text_token_collater()
 
-def preload_models():
+def preload_models(VALLE_checkpoint:str="vallex-checkpoint.pt") -> None:
+    '''
+    Preload model, codec, vocos. Assign them as global variables instead of return.
+    
+    Parameters:
+        VALLE_checkpoint ('str'):
+            Target checkpoint. 
+            If it's unavailable & default, will download from hugginface.
+    
+    Assign global variables:
+        model ('VALLE')
+        codec ('AudioTokenizer')
+        vocos ('Vocos')
+    '''
     global model, codec, vocos
     if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
-    if not os.path.exists(os.path.join(checkpoints_dir, model_checkpoint_name)):
+    if (not os.path.exists(os.path.join(checkpoints_dir, VALLE_checkpoint))) and VALLE_checkpoint == default_checkpoint:
         import wget
         try:
             logging.info(
@@ -64,6 +77,7 @@ def preload_models():
                 "\n Model weights download failed, please go to 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt'"
                 "\n manually download model weights and put it to {} .".format(os.getcwd() + "\checkpoints"))
     # VALL-E
+    print(f"Loading VALL-E from '{VALLE_checkpoint}'..")
     model = VALLE(
         N_DIM,
         NUM_HEAD,
@@ -76,20 +90,21 @@ def preload_models():
         prepend_bos=True,
         num_quantizers=NUM_QUANTIZERS,
     ).to(device)
-    checkpoint = torch.load(os.path.join(checkpoints_dir, model_checkpoint_name), map_location='cpu')
+    checkpoint = torch.load(os.path.join(checkpoints_dir, VALLE_checkpoint), map_location='cpu')
     missing_keys, unexpected_keys = model.load_state_dict(
         checkpoint["model"], strict=True
     )
     assert not missing_keys
     model.eval()
-
+    
     # Encodec
     codec = AudioTokenizer(device)
     
     vocos = Vocos.from_pretrained('charactr/vocos-encodec-24khz').to(device)
 
+    print("Loading Complete.")
 @torch.no_grad()
-def generate_audio(text, prompt=None, language='auto', accent='no-accent'):
+def generate_audio(text, prompt_path, language='auto', accent='no-accent'):
     global model, codec, vocos, text_tokenizer, text_collater
     text = text.replace("\n", "").strip(" ")
     # detect language
@@ -100,14 +115,7 @@ def generate_audio(text, prompt=None, language='auto', accent='no-accent'):
     text = lang_token + text + lang_token
 
     # load prompt
-    if prompt is not None:
-        prompt_path = prompt
-        if not os.path.exists(prompt_path):
-            prompt_path = "./presets/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            prompt_path = "./prompts/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            raise ValueError(f"Cannot find prompt {prompt}")
+    if prompt_path is not None:
         prompt_data = np.load(prompt_path)
         audio_prompts = prompt_data['audio_tokens']
         text_prompts = prompt_data['text_tokens']
@@ -139,7 +147,6 @@ def generate_audio(text, prompt=None, language='auto', accent='no-accent'):
         text_tokens_lens.to(device),
         audio_prompts,
         enroll_x_lens=enroll_x_lens,
-        top_k=-100,
         temperature=1,
         prompt_language=lang_pr,
         text_language=langs if accent == "no-accent" else lang,
@@ -167,15 +174,8 @@ def generate_audio_from_long_text(text, prompt=None, language='auto', accent='no
         language = langid.classify(text)[0]
 
     # if initial prompt is given, encode it
-    if prompt is not None and prompt != "":
-        prompt_path = prompt
-        if not os.path.exists(prompt_path):
-            prompt_path = "./presets/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            prompt_path = "./customs/" + prompt + ".npz"
-        if not os.path.exists(prompt_path):
-            raise ValueError(f"Cannot find prompt {prompt}")
-        prompt_data = np.load(prompt_path)
+    if prompt is not None:
+        prompt_data = np.load(prompt)
         audio_prompts = prompt_data['audio_tokens']
         text_prompts = prompt_data['text_tokens']
         lang_pr = prompt_data['lang_code']

@@ -467,13 +467,13 @@ class VALLE(VALLF):
         x_lens: torch.Tensor,
         y: torch.Tensor,
         enroll_x_lens: torch.Tensor,
-        top_k: int = -100,
         temperature: float = 1.0,
         prompt_language: str = None,
         text_language: str = None,
-        best_of: int = 1,
         length_penalty: float = 1.0,
         return_worst: bool = False,
+        best_of: int = 1,
+        top_k: int = -100,
     ) -> torch.Tensor:
         """
         Args:
@@ -598,7 +598,6 @@ class VALLE(VALLF):
                     y = worst_beam.unsqueeze(0)
                 else:
                     y = best_beam.unsqueeze(0)
-                print(f"VALL-E EOS [{prompts.shape[1]} -> {y.shape[1]}]")
                 break
 
             y = torch.concat([y, samples], dim=1)

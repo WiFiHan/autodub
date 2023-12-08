@@ -69,7 +69,7 @@ def clean_one(text):
         text = re.sub(r'\[EN\](.*?)\[EN\]',
                       lambda x: english_to_ipa2(x.group(1))+' ', text)
     if text.find('[KO]') != -1:
-        text = re.sub(r'\[EN\](.*?)\[EN\]',
+        text = re.sub(r'\[KO\](.*?)\[KO\]',
                       lambda x: korean_to_ipa2(x.group(1))+' ', text)
         
     text = re.sub(r'\s+$', '', text)

@@ -16,7 +16,7 @@ from .g2p import PhonemeBpeTokenizer
 
 from ..macros import *
 
-text_tokenizer = PhonemeBpeTokenizer(tokenizer_path="./bpe_69.json")
+text_tokenizer = PhonemeBpeTokenizer(tokenizer_path="./assets/bpe_69.json")
 text_collater = get_text_token_collater()
 
 device = torch.device("cpu")
@@ -54,9 +54,9 @@ def transcribe_one(model, audio_path):
         text_pr += "."
     return lang, text_pr
 
-def make_prompt(name, audio_prompt_path, transcript=None):
+def make_prompt(name, audio_path, transcript=None) -> dict:
     global model, text_collater, text_tokenizer, codec
-    wav_pr, sr = torchaudio.load(audio_prompt_path)
+    wav_pr, sr = torchaudio.load(audio_path)
     # check length
     if wav_pr.size(-1) / sr > 15:
         raise ValueError(f"Prompt too long, expect length below 15 seconds, got {wav_pr / sr} seconds.")
@@ -75,13 +75,17 @@ def make_prompt(name, audio_prompt_path, transcript=None):
             phonemes
         ]
     )
-
-    message = f"Detected language: {lang_pr}\n Detected text {text_pr}\n"
-
-    # save as npz file
-    save_path = os.path.join("./customs/", f"{name}.npz")
-    np.savez(save_path, audio_tokens=audio_tokens, text_tokens=text_tokens, lang_code=lang2code[lang_pr])
-    logging.info(f"Successful. Prompt saved to {save_path}")
+    
+    prompt = {
+        'audio_tokens': audio_tokens,
+        'text_tokens': text_tokens,
+        'lang_code': lang2code[lang_pr]
+    }
+    ## save as npz file
+    # save_path = os.path.join(f"./results/{name}/prompt" f"{name}.npz")
+    #np.savez(save_path, audio_tokens=audio_tokens, text_tokens=text_tokens, lang_code=lang2code[lang_pr])
+    # logging.info(f"Successful. Prompt saved to {save_path}")
+    return prompt
 
 
 def make_transcript(name, wav, sr, transcript=None):
