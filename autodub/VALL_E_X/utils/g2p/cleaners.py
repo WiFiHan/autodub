@@ -29,7 +29,7 @@ def chinese_cleaners(text):
     text = re.sub(r'([ˉˊˇˋ˙])$', r'\1。', text)
     return text
 
-def cje_cleaners(text):
+def cjek_cleaners(text):
     matches = []
     for pattern in patterns:
         matches.extend(re.finditer(pattern, text))

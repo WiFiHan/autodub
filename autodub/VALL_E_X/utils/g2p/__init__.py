@@ -14,7 +14,7 @@ class PhonemeBpeTokenizer:
 
   def tokenize(self, text):
     # 1. convert text to phoneme
-    phonemes, langs = _clean_text(text, ['cje_cleaners'])
+    phonemes, langs = _clean_text(text, ['cjek_cleaners'])
     # 2. replace blank space " " with "_"
     phonemes = phonemes.replace(" ", "_")
     # 3. tokenize phonemes
