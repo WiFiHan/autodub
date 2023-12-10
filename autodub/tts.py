@@ -3,9 +3,10 @@ import glob
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from .VALL_E_X.utils.prompt_making import make_prompt
-from autodub.VALL_E_X.utils.generation import SAMPLE_RATE, generate_audio
 from scipy.io.wavfile import write as write_wav
+from .VALL_E_X.utils.prompt_making import make_prompt
+from .VALL_E_X.utils.generation import SAMPLE_RATE, generate_audio
+from .script import MultilingualScript
 
 
 
@@ -16,46 +17,41 @@ def enhance_speech(audio_clip_dir:str|os.PathLike):
     '''
     raise NotImplementedError()
 
-def prepare_prompts(script:pd.DataFrame, name:str, enhance:bool=False):
+def prepare_prompts(script:MultilingualScript, enhance:bool=False):
     '''
     Generate and save prompt files.
     
     Parameters:
-        script ('pd.DataFrame'): 
-            Script containing time data of each line. 
-            Might be generated from 'autodub.stt.STT.get_script_from_video()'
-        
-        name ('str'): To get audio and output dirs
-        
+        script ('autodub.script.MultilingualScript'): To get audioClip_dir and transcripts.
+
         enhance ('bool'): Whether or not to use speech enhancement
     '''
-    audio_clip_dir = f"./results/{name}/audio/source/"
-    prompt_dir = f"./results/{name}/prompt/"
-    os.makedirs(f"./results/{name}/prompt/source", exist_ok=True)
+    audio_clip_dir = script.output_dir + "/audio/source/"
+    prompt_dir = script.output_dir + "/prompt/"
+    os.makedirs(prompt_dir, exist_ok=True)
     
-    for idx, row in tqdm(script.iterrows(), total=script.shape[0], desc="Generating prompts.."):
+    for idx, row in tqdm(script.data.iterrows(), total=len(script), desc="Generating prompts.."):
         audio_clip_path = audio_clip_dir + f"/segment_{str(idx).zfill(6)}.wav"
         prompt_path = prompt_dir + f"/prompt_{str(idx).zfill(6)}.npz"
-        
         if enhance:
             enhance_speech(audio_clip_dir)
             
-        prompt = make_prompt(name=name,
+        prompt = make_prompt(
+                    name=script.title,
                     audio_path=audio_clip_path,
                     transcript=row['source']
                     )
         np.savez(prompt_path, **prompt)
 
 
-def generate_translated_speech(script:pd.DataFrame, name:str, target_language:str):
-    if not target_language in script.keys():
-        raise ValueError(f"target_language '{target_language}' doesn't exist in script. You should get translated script from 'autodub.translator.Translator")
+def generate_translated_speech(script:MultilingualScript, target_language:str):
+    assert script.is_available(target_language)
     
-    output_dir = f"./results/{name}/audio/{target_language}/"
-    prompt_dir = f"./results/{name}/prompt/"
+    prompt_dir = script.output_dir + "/prompt/"
+    output_dir = script.output_dir + f"/audio/{target_language}/"
     os.makedirs(output_dir, exist_ok=True)
     
-    for idx, row in tqdm(script.iterrows(), total=script.shape[0], desc="Generating translated speech.."):
+    for idx, row in tqdm(script.data.iterrows(), total=len(script), desc="Generating translated speech.."):
         prompt_path = prompt_dir + f"/prompt_{str(idx).zfill(6)}.npz"
         output_path = output_dir + f"/segment_{str(idx).zfill(6)}.wav"
         

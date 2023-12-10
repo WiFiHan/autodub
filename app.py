@@ -4,9 +4,9 @@ warnings.filterwarnings("ignore")
 import pandas as pd
 import gradio as gr
 from autodub import preload_models, load_stt, load_translator
-from autodub.utils import split_video_to_clips, merge_clips_to_video
+from autodub.utils import prepare_clips, merge_clips_to_video
 from autodub.tts import prepare_prompts, generate_translated_speech
-
+from autodub.script import load_script_from_json
 
 lang2id = {
     'English': 'en',
@@ -24,34 +24,37 @@ def process(input_video, title, stt_type, translator_type, source_language, targ
     target_langid = lang2id[target_language]
     
     os.makedirs(f"./results/{title}/", exist_ok=True)
-    script_path = f"./results/{title}/script.csv"
+    script_path = f"./results/{title}/script.json"
     output_path = f"./results/{title}/[{target_langid}]_{title}.mp4"
     
     # STT
     if stt_type == 'None':
-        script = pd.read_csv(script_path)
+        script = load_script_from_json(script_path)
     else:
         stt = load_stt(stt_type)
-        script = stt.get_script_from_video(input_video, source_langid)
-        script.to_csv(script_path, index=False)
+        script = stt.make_script_from_video(
+            video_path=input_video, 
+            language=source_langid, 
+            title=title)
+        script.to_json(script_path)
     
     # Translation
     if translator_type != 'None':
         translator = load_translator(translator_type)
-        script = translator.translate_script(script, source_langid, target_langid)
-        script.to_csv(script_path, index=False)
+        script = translator.translate_script(script, target_langid)
+        script.to_json(script_path)
     
     # Extract clips
-    split_video_to_clips(input_video, script, name=title)
+    prepare_clips(script)
     
     # Make prompts for VALL-E
-    prepare_prompts(script, name=title)
+    prepare_prompts(script)
     
     # Generate speech with target language
-    generate_translated_speech(script, name=title, target_language=target_langid)
+    generate_translated_speech(script, target_language=target_langid)
     
     # Merge clips
-    merge_clips_to_video(script, name=title, language=target_langid)
+    merge_clips_to_video(script, language=target_langid)
     
     return output_path
 

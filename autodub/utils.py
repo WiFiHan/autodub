@@ -3,104 +3,95 @@ import yaml
 import pandas as pd
 from tqdm import tqdm
 from moviepy.editor import VideoFileClip,AudioClip, AudioFileClip, concatenate_videoclips, concatenate_audioclips, vfx
-
+from .script import MultilingualScript
 
 env_path =  './env.yaml'
 with open(env_path) as f:
     env = yaml.full_load(f)
 
-def split_video_to_clips(input_video_path:str|os.PathLike, script:pd.DataFrame, name:str) -> None:
+def prepare_clips(script:MultilingualScript) -> None:
     '''
     Split the video into short clips based on the script and save it
     
     Parameters:
-        input_video_path ('str' or 'os.PathLike'): Path to video
-        
-        script (pd.DataFrame): 
-            Script containing time data of each line. 
-            Might be generated from 'autodub.stt.STT.get_script_from_video()'
-             
-        name('str'): To make result dirs
+        script('MultilingualScript): 
+            A 'MultilingualScript' containing timestamp data of each lines.
     '''
-    if name is None:
-        name = "results/" + input_video_path.split('/')[-1].split('.')[0]
     
-    video_clip_dir = f"./results/{name}/video/source/"
-    audio_clip_dir = f"./results/{name}/audio/source/"
-    os.makedirs(video_clip_dir, exist_ok=True)
-    os.makedirs(audio_clip_dir, exist_ok=True)
+    videoClip_dir = script.output_dir + "/video/source"
+    audioClip_dir = script.output_dir + "/audio/source/"
+    os.makedirs(videoClip_dir, exist_ok=True)
+    os.makedirs(audioClip_dir, exist_ok=True)
     
-    video_file = VideoFileClip(input_video_path)
-    audio_file = video_file.audio
+    video_source = VideoFileClip(script.source_path)
+    audio_source = video_source.audio
 
-    with VideoFileClip(input_video_path) as video_file:
-        audio_file = video_file.audio
-        for idx in tqdm(range(script.shape[0]), desc="Extracting clips.."):
-            start = script.iloc[idx]['start'] / 1000
-            end = script.iloc[idx]['end'] / 1000
-            assert start < end
-            if idx + 1 >= script.shape[0]: 
-                # In the last index, 'next_start' is end of the video
-                next_start = None 
-            else:
-                next_start = script.iloc[idx+1]['start'] / 1000
-                assert end <= next_start
-            audio_path = audio_clip_dir + f'/segment_{str(idx).zfill(6)}.wav'
-            video_path = video_clip_dir + f'/segment_{str(idx).zfill(6)}.mp4'
+    for idx in tqdm(range(len(script)), desc="Extracting clips.."):
+        # 1. get timestamp
+        start = script.data.iloc[idx]['start'] / 1000
+        end = script.data.iloc[idx]['end'] / 1000
+        assert start < end
+        if idx + 1 >= len(script): 
+            # Set 'next_start' to end of the video when it's last index.
+            next_start = None 
+        else:
+            next_start = script.data.iloc[idx+1]['start'] / 1000
+            assert end <= next_start
             
-            
-            # extact video clip
-            video_clip = video_file.subclip(start, next_start)
-            video_clip.write_videofile(video_path, verbose=False, logger=None)
+        audioClip_path = audioClip_dir + f'/segment_{str(idx).zfill(6)}.wav'
+        videoClip_path = videoClip_dir + f'/segment_{str(idx).zfill(6)}.mp4'
+        
+        # 2. extact video clip
+        videoClip = video_source.subclip(start, next_start)
+        videoClip.write_videofile(videoClip_path, verbose=False, logger=None)
 
-            # extract audio clip
-            audio_clip = audio_file.subclip(start, end)
-            audio_clip.write_audiofile(audio_path, verbose=False, logger=None)
-            
-            prev_end = end
+        # 3. extract audio clip
+        audioClip = audio_source.subclip(start, end)
+        audioClip.write_audiofile(audioClip_path, verbose=False, logger=None)
+        
+        prev_end = end
     return 
 
-def merge_clips_to_video(script:pd.DataFrame, name:str, language:str):
+def merge_clips_to_video(script:MultilingualScript, language:str):
     '''
     Merge the clips into a complete video with audio of given language
     
     Parameters:
-    
-        script (pd.DataFrame): 
-            Script containing time data of each line. 
-            Might be generated from 'autodub.stt.STT.get_script_from_video()'
-             
-        name('str'): To get result dirs
-        
+        script ('autodub.script.MultilingualScript'):
+            To get timestamp data.
+            
         langauge ('str') :
             Target language of output video. One of ['KO', 'EN', 'JA', 'CN'].
-            Will load and merge audio-clip files from f"./results/{name}/audio/{language}/"
+            Audio-clip files in f"{script.output_dir}/audio/{language}/" will be merged.
     '''
-    output_path = f"./results/{name}/[{language}]_{name}.mp4"
+    output_path = script.output_dir + f"[{language}]{script.title}.mp4"
     
-    video_dir = f"./results/{name}/video/source/"
-    audio_dir = f"./results/{name}/audio/{language}/"
+    videoClip_dir = script.output_dir + f"/video/source/"
+    audioClip_dir = script.output_dir + f"/audio/{language}/"
 
     output_video = []
-    for idx in tqdm(range(script.shape[0]), desc="Merging clips.."):
-        video_path = video_dir + f"segment_{str(idx).zfill(6)}.mp4"
-        audio_path = audio_dir + f"segment_{str(idx).zfill(6)}.wav"
+    for idx in tqdm(range(len(script)), desc="Merging clips.."):
+        videoClip_path = videoClip_dir + f"segment_{str(idx).zfill(6)}.mp4"
+        audioClip_path = audioClip_dir + f"segment_{str(idx).zfill(6)}.wav"
         
-        video_clip = VideoFileClip(video_path)
-        audio_clip = AudioFileClip(audio_path)
+        videoClip = VideoFileClip(videoClip_path)
+        audioClip = AudioFileClip(audioClip_path)
         
-        if video_clip.duration < audio_clip.duration:
-            speed_multiplier = video_clip.duration / audio_clip.duration
-            video_clip = video_clip.fx(vfx.speedx, speed_multiplier)
+        # Match the length of audio and video
+        if videoClip.duration < audioClip.duration:
+            # If audioClip is longer than videoClip, slow down the videoClip
+            speed_multiplier = videoClip.duration / audioClip.duration
+            videoClip = videoClip.fx(vfx.speedx, speed_multiplier)
         
-        elif video_clip.duration > audio_clip.duration:
+        elif videoClip.duration > audioClip.duration:
+            # If videoClip is longer that audioClip, add a short silence at the end of audioClip.
             silent = AudioClip(
                 make_frame=lambda t: 0,
-                duration = video_clip.duration - audio_clip.duration
+                duration = videoClip.duration - audioClip.duration
                 )
-            audio_clip = concatenate_audioclips([audio_clip, silent])
+            audioClip = concatenate_audioclips([audioClip, silent])
             
-        output_video.append(video_clip.set_audio(audio_clip).copy())
+        output_video.append(videoClip.set_audio(audioClip).copy())
     output_video = concatenate_videoclips(output_video)
     
     print("Saving results..")

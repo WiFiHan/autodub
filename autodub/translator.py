@@ -1,30 +1,54 @@
 import os
+from abc import abstractmethod
 import json
 import requests
 import pandas as pd
 from .utils import env
+from .script import MultilingualScript
+
 
 class Translator:
-    def translate_script(self, script:pd.DataFrame, source_language:str, target_language:str) -> pd.DataFrame:
+    @abstractmethod
+    def translate_text(self, source_text:str, source_language:str, target_language:str) -> str:
         """
-        Translate each lines in the script.
+        Translate 'source_text' from 'source_language' to 'target_language'
+        """
+        pass
+        
+    def translate_script(self, 
+                         script:MultilingualScript, 
+                         target_language:str) -> MultilingualScript:
+        """
+        1. Translate each lines in the script
+        2. Add translations to given script instance.
         
         Parameters:
-            script ('pd.DataFrame'): 
-                Script containing time data of each line. 
-                Might be generated from 'autodub.stt.STT.get_script_from_video()'
-                
-            source_language ('str'):
-                Source langauge in script. One of ['KO', 'EN', 'JA', 'CN'].
+            script ('autodub.script.MultilingualScript'): 
+                MultilingualScript instance with source data
                 
             target_language ('str'): 
                 Target language to translate. One of ['KO', 'EN', 'JA', 'CN'].
             
-        Returns
-            'pd.DataFrame': Script with target language added
+        Returns:
+            'autodub.script.MultilingualScript':
+                Return the given script back, with new 'target_language' added.
         """
-        raise NotImplementedError()
+        translations = []
+        
+        # 1.Translate each lines in the script
+        for idx, row in script.data.iterrows():
+            # translate each sentence
+            source_text = row['source']
+            translations.append(self.translate_text(
+                source_text, 
+                script.source_language, 
+                target_language
+                ))
 
+        # 2.Add translations to given script instance.
+        script.data[target_language] = translations
+        return script
+    
 
 class PapagoTranslator(Translator):
     def __init__(self):
@@ -48,6 +72,9 @@ class PapagoTranslator(Translator):
             'zh': 'zh-CN'
         }
 
+    def translate_text(self, source_text:str, source_language:str, target_language:str) -> str:
+        return self._call_papago_api(source_text, source_language, target_language)
+    
     def _call_papago_api(self, text:str, source_language:str, target_language:str) -> str:
         source_langid = self._get_papago_langid[source_language]
         target_langid = self._get_papago_langid[target_language]
@@ -68,27 +95,13 @@ class PapagoTranslator(Translator):
             
         return result
     
-    def translate_script(self, script:pd.DataFrame, source_language:str, target_language:str) -> pd.DataFrame:
-        translated_script = script.copy()
-        translated_texts = []
-       
-        for idx, row in script.iterrows():
-            # translate each sentence
-            source_text = row['source']
-            translated_texts.append(self._call_papago_api(source_text, source_language, target_language))
-
-        # add new column for target language
-        translated_script[target_language] = translated_texts
-        
-        return translated_script
     
-
 def load_translator(name:'str') -> Translator:
     '''
-    Instansiate one of autodub.translator classes
+    Instansiate one of 'Translator' classes
     
     Parameters:
-        name ('str'): Target class. One of ['CLOVA', 'WHISPER', ...]
+        name ('str'): Target class. One of ['CLOVA', ...]
         
     Returns:
         'Translator': Target 'Translator' instance

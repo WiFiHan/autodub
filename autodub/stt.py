@@ -1,24 +1,27 @@
 import os
+from abc import  abstractmethod
 import requests
 import json
 import pandas as pd
 from .utils import env
-
+from .script import MultilingualScript
 
 class STT:
-    def get_script_from_video(self, video_path:str, language:str) -> pd.DataFrame:
+    @abstractmethod
+    def make_script_from_video(self, video_path:str, language:str, title:str) -> MultilingualScript:
         """
         Generate a script from video
         
         Parameters:
-            video_path ('str'): Path to video file
+            video_path ('str') : Path to video file
             langauge ('str') : Language in video. One of ['KO', 'EN', 'JA', 'CN'].
-        
-        Returns
-            'pd.DataFrame': Information of each lines. Sequence of (start, end, source(text), translation1, translation2, ...)
+            title ('str') : Title of script. Use for making checkpoint dir, etc.
 
+        Returns
+            'autodub.script.MultilingualScript': 
+                A 'MultilingualScript' containing information of the given video
         """
-        raise NotImplementedError()
+        pass
     
 
 class ClovaSTT(STT):
@@ -43,7 +46,7 @@ class ClovaSTT(STT):
             'zh': 'zh-cn'
         }
 
-    def _call_clova_api(self, video_path, language):
+    def _call_clova_api(self, video_path:str, language:str):
         if not language in self._get_clova_langid.keys():
             raise ValueError(f"Unexpected language: {language}")
         else:
@@ -67,22 +70,28 @@ class ClovaSTT(STT):
         response = requests.post(headers=headers, url=self._invoke_url + '/recognizer/upload', files=files)
         return response
     
-    def get_script_from_video(self, video_path, language):
-        
+    def make_script_from_video(self, 
+                               video_path:str, 
+                               language:str, 
+                               title:str,
+                               ) -> MultilingualScript:
         clova_response = self._call_clova_api(video_path, language)
         result_dict = json.loads(clova_response.text)
         
-        # Organize in DataFrame format
-        script = []
+        # Organize in DataFrame format.
+        data = []
         for segment in result_dict["segments"]:
-            script.append({
+            data.append({
                 'start': segment['start'],
                 'end': segment['end'],
                 'source': segment['text'],
             })
-            
-        script = pd.DataFrame(script)
-        return script
+        data = pd.DataFrame(data)
+        
+        return MultilingualScript(title=title, 
+                                  source_path=video_path,
+                                  source_language=language, 
+                                  data=data)
     
 
 class WhisperSTT(STT):
@@ -90,13 +99,13 @@ class WhisperSTT(STT):
     def __init__(self):
         raise NotImplementedError()
 
-    def get_script_from_video(self, video_path: str, language: str) -> pd.DataFrame:
+    def make_script_from_video(self, video_path: str, language: str, title: str) -> MultilingualScript:
         raise NotImplementedError()
     
     
 def load_stt(name:'str') -> STT:
     '''
-    Instansiate one of autodub.STT classes
+    Instansiate one of STT classes
     
     Parameters:
         name ('str'): Target STT. One of ['CLOVA', 'WHISPER', ...]
