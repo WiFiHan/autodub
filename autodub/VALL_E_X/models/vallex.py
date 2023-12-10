@@ -436,17 +436,13 @@ class VALLE(VALLF):
             nar_scale_factor=nar_scale_factor,
             **kwargs,
         )
+
         self.language_ID = {
             'en': 0,
             'zh': 1,
             'ja': 2,
+            'ko': 3,
         }
-        # self.language_ID = {
-        #    'en': 0,
-        #    'zh': 1,
-        #    'ja': 2,
-        #    'ko': 3,
-        #}
         self.ar_language_embedding = TokenEmbedding(d_model, len(self.language_ID))
         self.nar_language_embedding = TokenEmbedding(d_model, len(self.language_ID))
 

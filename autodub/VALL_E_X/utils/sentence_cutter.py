@@ -2,7 +2,7 @@ import nltk
 import jieba
 import sudachipy
 import langid
-langid.set_languages(['en', 'zh', 'ja'])
+langid.set_languages(['en', 'zh', 'ja', 'ko'])
 
 def split_text_into_sentences(text):
     if langid.classify(text)[0] == "en":

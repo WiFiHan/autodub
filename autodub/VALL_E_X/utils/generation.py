@@ -4,7 +4,7 @@ import torch
 from vocos import Vocos
 import logging
 import langid
-langid.set_languages(['en', 'zh', 'ja'])
+langid.set_languages(['en', 'zh', 'ja', 'ko'])
 
 import pathlib
 import platform
@@ -36,8 +36,6 @@ url = 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt
 
 checkpoints_dir = "./checkpoints/"
 
-default_checkpoint = "vallex-checkpoint.pt"
-
 model = None
 
 codec = None
@@ -47,7 +45,7 @@ vocos = None
 text_tokenizer = PhonemeBpeTokenizer(tokenizer_path="./assets/bpe_69.json")
 text_collater = get_text_token_collater()
 
-def preload_models(VALLE_checkpoint:str="vallex-checkpoint.pt") -> None:
+def preload_models(VALLE_checkpoint:str="vallex-korean-checkpoint.pt") -> None:
     '''
     Preload model, codec, vocos. Assign them as global variables instead of return.
     
@@ -63,18 +61,18 @@ def preload_models(VALLE_checkpoint:str="vallex-checkpoint.pt") -> None:
     '''
     global model, codec, vocos
     if not os.path.exists(checkpoints_dir): os.mkdir(checkpoints_dir)
-    if (not os.path.exists(os.path.join(checkpoints_dir, VALLE_checkpoint))) and VALLE_checkpoint == default_checkpoint:
+    if (not os.path.exists(os.path.join(checkpoints_dir, VALLE_checkpoint))):
         import wget
         try:
             logging.info(
-                "Downloading model from https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt ...")
-            # download from https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt to ./checkpoints/vallex-checkpoint.pt
-            wget.download("https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt",
+                "Downloading model from https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt ...")
+            # download from https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt to ./checkpoints/vallex-korean-checkpoint.pt
+            wget.download("https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt",
                           out="./checkpoints/vallex-checkpoint.pt", bar=wget.bar_adaptive)
         except Exception as e:
             logging.info(e)
             raise Exception(
-                "\n Model weights download failed, please go to 'https://huggingface.co/Plachta/VALL-E-X/resolve/main/vallex-checkpoint.pt'"
+                "\n Model weights download failed, please go to 'https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt'"
                 "\n manually download model weights and put it to {} .".format(os.getcwd() + "\checkpoints"))
     # VALL-E
     print(f"Loading VALL-E from '{VALLE_checkpoint}'..")
@@ -92,7 +90,7 @@ def preload_models(VALLE_checkpoint:str="vallex-checkpoint.pt") -> None:
     ).to(device)
     checkpoint = torch.load(os.path.join(checkpoints_dir, VALLE_checkpoint), map_location='cpu')
     missing_keys, unexpected_keys = model.load_state_dict(
-        checkpoint["model"], strict=True
+        checkpoint, strict=True
     )
     assert not missing_keys
     model.eval()
