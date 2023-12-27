@@ -1,4 +1,5 @@
 .venv/
+.vvenv/
 __pycache__/
 env.yaml
 test.ipynb
