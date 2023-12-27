@@ -68,7 +68,7 @@ def preload_models(VALLE_checkpoint:str="vallex-korean-checkpoint.pt") -> None:
                 "Downloading model from https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt ...")
             # download from https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt to ./checkpoints/vallex-korean-checkpoint.pt
             wget.download("https://huggingface.co/SungjinWi/vallex_korean/resolve/main/vallex-korean-checkpoint.pt",
-                          out="./checkpoints/vallex-checkpoint.pt", bar=wget.bar_adaptive)
+                          out="./checkpoints/vallex-korean-checkpoint.pt", bar=wget.bar_adaptive)
         except Exception as e:
             logging.info(e)
             raise Exception(

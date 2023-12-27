@@ -1,6 +1,7 @@
 import os
 import warnings
 warnings.filterwarnings("ignore")
+import argparse
 import pandas as pd
 import gradio as gr
 from autodub import preload_models, load_stt, load_translator
@@ -112,5 +113,9 @@ with demo:
     
     
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Tobigs-19 Vision Conference")
+    parser.add_argument('--public', default=False)
+    args = parser.parse_args()
+    
     preload_models()
-    demo.queue().launch()
+    demo.queue().launch(share=args.public)
