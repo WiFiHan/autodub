@@ -64,7 +64,7 @@ def merge_clips_to_video(script:MultilingualScript, language:str):
             Target language of output video. One of ['KO', 'EN', 'JA', 'CN'].
             Audio-clip files in f"{script.output_dir}/audio/{language}/" will be merged.
     '''
-    output_path = script.output_dir + f"[{language}]{script.title}.mp4"
+    output_path = script.output_dir + f"[{language}]_{script.title}.mp4"
     
     videoClip_dir = script.output_dir + f"/video/source/"
     audioClip_dir = script.output_dir + f"/audio/{language}/"
