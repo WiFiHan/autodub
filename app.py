@@ -114,7 +114,7 @@ with demo:
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Tobigs-19 Vision Conference")
-    parser.add_argument('--public', default=False)
+    parser.add_argument('--public',action='store_true')
     args = parser.parse_args()
     
     preload_models()
