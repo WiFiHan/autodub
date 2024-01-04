@@ -64,7 +64,7 @@ class PapagoTranslator(Translator):
         self._id = env['PAPAGO']['ID']
         # PAPAGO Client Secret
         self._secret =  env['PAPAGO']['SECRET']
-        self._url = env['PAPAGO']['URL']
+        self._url = 'https://openapi.naver.com/v1/papago/n2mt'
         self._get_papago_langid = {
             "ko": 'ko',
             'en': 'en',
@@ -94,7 +94,52 @@ class PapagoTranslator(Translator):
             result = response['message']['result']['translatedText']
             
         return result
+
+class DeepLTranslator(Translator):
+    def __init__(self):
+        '''
+        You must prepare "AUTH_KEY" from your own DeepL account
+        Follow 'https://www.deepl.com/docs-api/translating-text/request/'
+        And put them into './env.yaml'
+        
+        DeepL API Reference:
+            'https://www.deepl.com/docs-api/translating-text/request/'
+        '''
+        # DeepL API Auth Key
+        self._auth_key = env['DEEPL']['AUTH_KEY']
+        self._url = 'https://api-free.deepl.com/v2/translate'
+        self._get_deepl_langid = {
+            "ko": 'KO',
+            'en': 'EN',
+            'ja': 'JA',
+            'zh': 'ZH'
+        }
+
+    def translate_text(self, source_text:str, source_language:str, target_language:str) -> str:
+        return self._call_deepl_api(source_text, source_language, target_language)
     
+    def _call_deepl_api(self, text:str, source_language:str, target_language:str) -> str:
+        source_langid = self._get_deepl_langid[source_language]
+        target_langid = self._get_deepl_langid[target_language]
+        
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        data = {
+            'auth_key': self._auth_key,
+            'text': text,
+            'source_lang': source_langid,
+            'target_lang': target_langid,
+        }
+        response = requests.post(self._url, data=data, headers=headers).json()
+        
+        if not 'translations' in response.keys():
+            print(response)
+            raise AssertionError()
+        else:
+            result = response['translations'][0]['text']
+            
+        return result    
     
 def load_translator(name:'str') -> Translator:
     '''
@@ -108,4 +153,5 @@ def load_translator(name:'str') -> Translator:
     '''
     match name:
         case "PAPAGO": return PapagoTranslator()
+        case "DEEPL": return DeepLTranslator()
         case _: raise ValueError()

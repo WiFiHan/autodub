@@ -1,7 +1,12 @@
+#Change this file name to env.yaml and erase this comment
+
 CLOVA:
-  INVOKE_URL: <YOUR_INVOKE_URL>
-  SECRET: <YOUR_SECRET_KEY>
+  INVOKE_URL: <get it from https://clovaspeech.ncloud.com/domain/6304/setting which is the page after executing builder>
+  SECRET: <get it from https://clovaspeech.ncloud.com/domain/6304/setting which is the page after executing builder>
 
 PAPAGO:
-  ID: <YOUR_ID>
-  SECRET: <YOUR_SECRET_KEY>
+  ID: <get it from https://developers.naver.com/apps/#/list and click the specific Application>
+  SECRET: <get it from https://developers.naver.com/apps/#/list and click the specific Application>
+
+DEEPL:
+  AUTH_KEY: <get it from https://www.deepl.com/ko/account/summary after you gain developer account>

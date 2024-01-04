@@ -74,12 +74,12 @@ with demo:
                 )
             STT_dropdown = gr.Radio(
                 label="STT method", 
-                choices=["CLOVA", "None"],
+                choices=["CLOVA", "WHISPER", "None"],
                 info='CHOOSE "None" If you have made script for same video before. (To save resources)'
                 )
             Translator_dropdown = gr.Radio(
                 label="Translation method",
-                choices=["PAPAGO", "None"],
+                choices=["PAPAGO", "DEEPL", "None"],
                 info='CHOOSE "None" If you have translated script for same video & language before (To save resources)'
                 )
             source_lang_dropdown = gr.Radio(

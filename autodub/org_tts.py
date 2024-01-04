@@ -36,7 +36,6 @@ def prepare_prompts(script:MultilingualScript, enhance:bool=False):
         if enhance:
             enhance_speech(audio_clip_dir)
             
-        print(f'row is {row}. tts.py line 39')
         prompt = make_prompt(
                     name=script.title,
                     audio_path=audio_clip_path,
