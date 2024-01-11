@@ -9,7 +9,6 @@ from .VALL_E_X.utils.generation import SAMPLE_RATE, generate_audio
 from .script import MultilingualScript
 
 
-
 def enhance_speech(audio_clip_dir:str|os.PathLike):
     # TODO: Implement Speech Enhancement
     '''

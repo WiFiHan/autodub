@@ -5,7 +5,7 @@ import json
 import pandas as pd
 from moviepy.editor import VideoFileClip
 import whisper_timestamped as whisper
-from .utils import env
+from .utils import env, extract_audio_from_video
 from .script import MultilingualScript
 
 class STT:
@@ -53,7 +53,7 @@ class ClovaSTT(STT):
             raise ValueError(f"Unexpected language: {language}")
         else:
             clova_langid = self._get_clova_langid[language]
-            
+
         request_body = {
             'language': clova_langid,
             'completion': 'sync',
@@ -80,6 +80,11 @@ class ClovaSTT(STT):
         clova_response = self._call_clova_api(video_path, language)
         result_dict = json.loads(clova_response.text)
         
+        audio_output_path = f'./results/{title}/audio/source.wav'
+        if not os.path.exists(os.path.dirname(audio_output_path)):
+            os.makedirs(os.path.dirname(audio_output_path))
+        source_video = video_path
+
         # Organize in DataFrame format.
         data = []
         for segment in result_dict["segments"]:
@@ -91,7 +96,8 @@ class ClovaSTT(STT):
         data = pd.DataFrame(data)
         
         return MultilingualScript(title=title, 
-                                  source_path=video_path,
+                                  video_path=video_path,
+                                  audio_path=audio_output_path,
                                   source_language=language, 
                                   data=data)
     
@@ -102,9 +108,10 @@ class WhisperSTT(STT):
 
     def make_script_from_video(self, video_path: str, language: str, title: str) -> MultilingualScript:
         
-        audio_output_path = f'./whisper_extracted_audio/{title}.wav'
-        source_video = video_path
-        extract_audio_from_video(source_video, audio_output_path)
+
+        audio_output_path = f'./results/{title}/audio/source.wav'
+        if not os.path.exists(os.path.dirname(audio_output_path)):
+            os.makedirs(os.path.dirname(audio_output_path))
         audio = whisper.load_audio(audio_output_path)
         
         model = whisper.load_model("medium", download_root=os.path.join(os.getcwd(), "whisper"))
@@ -117,11 +124,14 @@ class WhisperSTT(STT):
                 'start': int(float(segment['start']) * 1000),
                 'end': int(float(segment['end'])*1000),
                 'source': segment['text'],
-            })
+            })  
         data = pd.DataFrame(data)
         
+        print(f'video_path is {video_path}. stt.py line 130')
+
         return MultilingualScript(title=title, 
-                                  source_path=video_path,
+                                  video_path=video_path,
+                                  audio_path=audio_output_path,
                                   source_language=language, 
                                   data=data)
     
@@ -141,9 +151,3 @@ def load_stt(name:'str') -> STT:
         case "WHISPER": return WhisperSTT()
         case _: raise ValueError()
         
-def extract_audio_from_video(video_file_path, output_audio_path):
-    # 비디오 파일 로드
-    video_clip = VideoFileClip(video_file_path)
-
-    # 오디오 추출 및 파일로 저장
-    video_clip.audio.write_audiofile(output_audio_path)

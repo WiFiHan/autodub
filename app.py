@@ -5,7 +5,7 @@ import argparse
 import pandas as pd
 import gradio as gr
 from autodub import preload_models, load_stt, load_translator
-from autodub.utils import prepare_clips, merge_clips_to_video
+from autodub.utils import sep_noise_speech, enhance_audio, prepare_clips, merge_clips_to_video, extract_audio_from_video, add_background_noise
 from autodub.tts import prepare_prompts, generate_translated_speech
 from autodub.script import load_script_from_json
 
@@ -25,9 +25,20 @@ def process(input_video, title, stt_type, translator_type, source_language, targ
     target_langid = lang2id[target_language]
     
     os.makedirs(f"./results/{title}/", exist_ok=True)
+    os.makedirs(f"./results/{title}/audio/", exist_ok=True)
     script_path = f"./results/{title}/script.json"
-    output_path = f"./results/{title}/[{target_langid}]_{title}.mp4"
+    without_noise_output_path = f"./results/{title}/[{target_langid}]_{title}.mp4"
+    with_noise_output_path = f"./results/{title}/[{target_langid}]_{title}_with_noise.mp4"
     
+    #Extract audio from video first
+    extract_audio_from_video(input_video, f"./results/{title}/audio/init_source.wav")
+    #Enhance audio
+    enhance_audio(f"./results/{title}/audio/init_source.wav", f"./results/{title}/audio/source.wav")
+    #Separate speech and noise for gaining noise
+    sep_noise_speech(title)
+
+
+    print(f'input_video is {input_video}. app.py line 41')
     # STT
     if stt_type == 'None':
         script = load_script_from_json(script_path)
@@ -56,8 +67,11 @@ def process(input_video, title, stt_type, translator_type, source_language, targ
     
     # Merge clips
     merge_clips_to_video(script, language=target_langid)
-    
-    return output_path
+    return without_noise_output_path
+
+    # Merge noise and video
+    # add_background_noise(without_noise_output_path, f"./results/{title}/audio/init_source_Instruments.wav", with_noise_output_path)
+    # return with_noise_output_path
 
 def reset():
     return None
